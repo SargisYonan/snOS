@@ -95,7 +95,9 @@ must be executed in the following order:
 </dl>
       
 ## Current Setup
+
 I have successfully used snOS on:
+
     Atmel AVR Atmega 328P - I will provide the complete port soon in this repository
       
 ## Future Development and TODO
