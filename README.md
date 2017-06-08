@@ -94,6 +94,33 @@ must be executed in the following order:
       
 </dl>
       
+## Current Setup
+I have successfully used snOS on:
+    Atmel AVR Atmega 328P - I will provide the complete port soon in this repository
+      
+## Future Development and TODO
+    - make new_task return a task pointer
+    - (in progress) test multi-node network with several threads and test collisions
+    - test on the MEGA
+    - test on a PIC32
+    - (in development) create an embedded linux client that can aggregate snOS network data to push to the cloud
+## Contributing workflow
+
+If you'd like to contribuate a change to this project:
+
+1. [Fork this project][fork] to your account.
+2. [Create a branch][branch] for the change you intend to make.
+3. Make your changes to your fork.
+4. [Send a pull request][pr] from your fork’s branch to our `master` branch.
+
+[fork]: https://help.github.com/articles/fork-a-repo/
+[branch]: https://help.github.com/articles/creating-and-deleting-branches-within-your-repository
+[pr]: https://help.github.com/articles/using-pull-requests/
+
+## License
+[CC0-1.0](./LICENSE).
+
+## Author
 <dl>
-  <dt>snOS was created by Sargis S Yonan</dt>
+  <dt>snOS was created by Sargis S Yonan in 2017</dt>
 </dl>
