@@ -123,7 +123,7 @@ If you'd like to contribuate a change to this project:
 [pr]: https://help.github.com/articles/using-pull-requests/
 
 ## License
-[CC0-1.0](./LICENSE).
+[GNU GPLv3](./LICENSE).
 
 ## Author
 <dl>
