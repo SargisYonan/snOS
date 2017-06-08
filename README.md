@@ -105,6 +105,9 @@ I have successfully used snOS on:
     - (in progress) test multi-node network with several threads and test collisions
     - test on the MEGA
     - test on a PIC32
+    - time thread switching
+    - time packet trigger switching
+    - measure memory usage in RAM/ROM
     - (in development) create an embedded linux client that can aggregate snOS network data to push to the cloud
 ## Contributing workflow
 
