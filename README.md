@@ -95,6 +95,103 @@ must be executed in the following order:
       
 </dl>
       
+## snOS Connect
+
+snOS Connect is the networking arm of this project that allows the embedded system running snOS to connect to other sensor nodes and to other networks like the Internet. 
+Using snOS Connect is optional, but it is really what makes snOS a useful abstraction on an embedded system.
+To use this feature, a serial link must be physically established between two or more sensor nodes. A common baudrate on the UART/USART channel must be established between all nodes. As long as the correct snOS port functions have been written, the systems can now communicate and trigger events on eachother with out further hardware or port setup.
+
+### How snOS Connect Works
+
+A task handler is written with the `RUN FOREVER` process type option to simply check the status of a sensor.
+
+On Controller 1:
+
+```
+snOSError check_light_sensor(void) {
+    uint16_t light_value = 0;
+    
+    static snOSTransceiver *light_com_channel = NULL;
+    
+    light_com_channel = snos_connect_initialize_channel(snos_task_id() , &(serial_get_byte), &(serial_send_byte());
+    
+    light_value = get_light_value(); // get_light_value() is a user-defined function to interface with a hardware light sensor
+    
+    if (light_value < MINIMUM_LIGHT_THRESHOLD) {
+        snos_connect_send_packet(light_com_channel, TURN_ON_LIGHT_PACKET, TURN_ON_LIGHT_PACKET_SIZE);
+    }
+    
+    return snOS_SUCCESS;
+}
+
+void main (void) {
+    initialize_light_sensor();
+    initialize_uart_driver(DEFAULT_BAUDRATE);
+    
+    snos_initialize();
+    
+    if (snos_new_task(&check_light_sensor, RUN_FOREVER) != snOS_SUCCESS) {
+        while(1); // hang on error
+    }
+    
+    snos_connect_start();
+    snos_start();
+    
+    for(;;) {
+        // do nothing
+    }
+}
+```
+
+On Controller 2:
+
+```
+snOSError turn_on_led(void) {
+    static bool init = false;
+    static snOSTransceiver *led_com_channel = NULL;
+    light_com_channel = snos_connect_initialize_channel(snos_task_id() , &(serial_get_byte), &(serial_send_byte());
+    
+    if (init) {
+        led_on(); // turns on an external LED
+    }
+    
+    init = true;
+    return snOS_SUCCESS;
+}
+
+void main (void) {
+    initialize_leds();
+    initialize_uart_driver(DEFAULT_BAUDRATE);
+    
+    snos_initialize();
+    
+    if (snos_new_task(&turn_on_led, RUN_ON_REQUEST) != snOS_SUCCESS) {
+        while(1); // hang on error
+    }
+    
+    snos_connect_start();
+    snos_start();
+    
+    for(;;) {
+        // do nothing
+    }
+}
+```
+
+Now when a significant light event is triggered on controller 1, a packet is formed and sent to controller 2.
+The packet will then be internally process on controller 2, and the `turn_on_led` task will be executed on controller 2.
+The LED attatched to controller 2 will then turn on.
+
+<pre>
+                    |-----------------|                    |-------------------|
+                    |   CONTROLLER 1  |<-----(PACKET)----->|   CONTROLLER 2    |                           
+    Light Sensor--->| SENSOR TRIGGERS |                    |  PACKET RECEIVED  |
+                    |   EVENT FROM    |                    | TRIGGERS A THREAD |---(Turn On)-->LED
+                    |   ITS HANDLER   |                    |    TO EXECUTE     |
+                    |-----------------|                    |-------------------|
+</pre>
+
+
 ## Current Setup
 
 I have successfully used snOS on:
