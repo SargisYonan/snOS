@@ -83,8 +83,9 @@ must be executed in the following order:
      repeat this step as desired.
      
    3. (optional -- required if using snOS Connect - the sensor node component)
+      From within a task handler function definition, call:
       `snos_connect_initialize_channel(snOSTask *handler,uint8_t (*packet_byte_receiver)(void),void (*packet_byte_transmitter)(uint8_t));`
-      handler - the task handler pointer returned by `snos_new_task()`
+      handler - the task handler pointer returned by `snos_task_id()`
       packet_byte_receiver/packet_byte_transmitter - a pointer to the serial byte receive/transmit function defined in Layer 2
 
       Then call `snos_connect_start()`
@@ -101,7 +102,6 @@ I have successfully used snOS on:
     Atmel AVR Atmega 328P - I will provide the complete port soon in this repository
       
 ## Future Development and TODO
-    - make new_task return a task pointer
     - (in progress) test multi-node network with several threads and test collisions
     - test on the MEGA
     - test on a PIC32
