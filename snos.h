@@ -14,6 +14,8 @@ snOSError snos_start(void);
 snOSError snos_new_task(
 	snOSError (*task_handler)(void), 
 	snOSTaskRunType process_type);
+
+snOSTask *snos_task_id(void);
 snOSError snos_lock(snOSTask *task);
 snOSError snos_unlock(snOSTask *task);
 

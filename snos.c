@@ -1,7 +1,6 @@
 #include "snos.h"
 
 snOSError snos_initialize(void) {
-
 	snOSError ret;
 
 	ret = initialize_snos_system_queue();
@@ -33,4 +32,8 @@ snOSError snos_lock(snOSTask *task) {
 
 snOSError snos_unlock(snOSTask *task) {
 	return snos_task_unlock(task);
+}
+
+snOSTask *snos_task_id(void) {
+	return snos_this_task_id();
 }
