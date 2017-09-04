@@ -19,7 +19,7 @@ snOSError snos_start(void) {
 	return ret;
 }
 
-snOSError snos_new_task(
+snOSTask *snos_new_task(
 	snOSError (*task_handler)(void), 
 	snOSTaskRunType process_type) {
 

@@ -1,8 +1,9 @@
 #include <snos_task_manager.h>
 #include <list.h>
+#include <stdlib.h>
 
 static list_t *snOS_tasks = NULL;
-snOSTask *current_task = NULL;
+static snOSTask *current_task = NULL;
 
 snOSError initialize_snos_system_queue(void) {
 	snOS_tasks = list_create();
@@ -17,7 +18,7 @@ snOSError start_snos_system_queue(void) {
 	list_move_cursor_to_head(snOS_tasks);
 	current_task = list_get_cursor_data(snOS_tasks);
 
-	if (current_task) {
+	if (current_task && ((current_task->process_type == RUN_FOREVER) || (current_task->process_type == RUN_ONCE))) {
 		// execute first function
 		return current_task->task_handler();
 	}
@@ -25,22 +26,20 @@ snOSError start_snos_system_queue(void) {
 	return snOS_OUT_OF_TASK_ERROR;
 }
 
-snOSError snos_task_manager_add_task(
+snOSTask *snos_task_manager_add_task(
 	snOSError (*task_handler)(void), 
 	snOSTaskRunType process_type) {
 
 	snOSTask *new_task = snos_alloc(sizeof(snOSTask));
+
 	if (new_task) {
 		new_task->task_handler = task_handler;
 		new_task->process_type = process_type;
 		new_task->lock = 0;	
-		new_task->this_task = new_task;
 		list_append(snOS_tasks, new_task);
-
-		return snOS_SUCCESS;
 	}
 
-	return snOS_SYSTEM_OOM_ERROR;
+	return new_task;
 }
 
 snOSError snos_scheduler_run_next_task(void) {
@@ -52,9 +51,7 @@ snOSError snos_scheduler_run_next_task(void) {
 		return snOS_OUT_OF_TASK_ERROR;
 	}
 
-	#ifdef SNOS_CONNECT
-		snos_connect_receiver();
-	#endif
+	snos_receiver();
 
 	switch(current_task->process_type) {
 

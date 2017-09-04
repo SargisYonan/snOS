@@ -14,7 +14,6 @@ BY DEFAULT:
 	must therefore be linked.
 */
 
-#include <stdlib.h>
 void *snos_alloc(uint64_t size);
 
 /* 
@@ -25,7 +24,6 @@ BY DEFAULT:
     This implementation uses the system's free() and the standard library 
 	must therefore be linked.
 */
-#include <stdlib.h>
 void snos_free(void *ptr);
 
 #endif

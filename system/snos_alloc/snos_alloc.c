@@ -1,5 +1,5 @@
 #include <snos_alloc.h>
-
+#include <stdlib.h>
 #include <string.h> // memset
 
 void *snos_alloc(uint64_t size) {

@@ -3,9 +3,7 @@
 
 #include "snos_error_codes.h"
 
-#ifdef SNOS_CONNECT
-	#include <snos_connect.h>
-#endif
+#include "snos_connect.h"
 
 typedef enum snOSTaskType {
 	RUN_FOREVER, 
@@ -13,22 +11,19 @@ typedef enum snOSTaskType {
 	RUN_ON_REQUEST
 } snOSTaskRunType;
 
-struct _snos_system_task {
-	struct _snos_system_task *this_task;
+struct snos_system_task_s {
 	snOSError (*task_handler)(void);
 	snOSTaskRunType process_type;
 	uint8_t requested;
 	uint8_t lock;
-	#ifdef SNOS_CONNECT
-		snOSTransceiver *channel;
-	#endif
+	struct snos_transceiver_s *channel;
 };
-typedef struct _snos_system_task snOSTask;
+typedef struct snos_system_task_s snOSTask;
 
 snOSError start_snos_system_queue(void);
 snOSError initialize_snos_system_queue(void);
 
-snOSError snos_task_manager_add_task(
+snOSTask *snos_task_manager_add_task(
 	snOSError (*task_handler)(void), 
 	snOSTaskRunType process_type);
 

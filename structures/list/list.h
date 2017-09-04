@@ -2,8 +2,8 @@
 // Sargis S Yonan
 // April 2017
 
-#ifndef _NOS_SYSTEM_LIST_H_
-#define _NOS_SYSTEM_LIST_H_
+#ifndef _SNOS_SYSTEM_LIST_H_
+#define _SNOS_SYSTEM_LIST_H_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -23,20 +23,18 @@
 	#define LIST_FREE snos_free
 #endif
 
-struct _node{
-	void *data_ptr;
+typedef struct _node {
 	struct _node *prev_ptr;
 	struct _node *next_ptr;
-};
-typedef struct _node node_t;
+	void *data_ptr;
+} node_t;
 
-struct _list {
+typedef struct _list {
 	node_t *head_ptr;
 	node_t *tail_ptr;
 	uint32_t list_length;
 	node_t *cursor_ptr;
-};
-typedef struct _list list_t;
+} list_t;
 
 
 // basic list functions
@@ -58,4 +56,4 @@ uint8_t list_detete_current_item(list_t *list_ptr);
 
 uint8_t list_destroy_list(list_t *list_ptr);
 
-#endif // _NOS_SYSTEM_LIST_H_
+#endif // _SNOS_SYSTEM_LIST_H_

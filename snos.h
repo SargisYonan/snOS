@@ -1,17 +1,15 @@
 #ifndef _SNOS_H_
 #define _SNOS_H_
 
+#define SNOS_CONNECT (1)
+#include <snos_connect.h>
 #include <snos_task_manager.h>
 #include <snos_alloc.h>
 #include <snos_error_codes.h>
 
-#ifdef SNOS_NETWORK_ENABLE
-	#include <snos_connect.h>
-#endif
-
 snOSError snos_initialize(void);
 snOSError snos_start(void);
-snOSError snos_new_task(
+snOSTask *snos_new_task(
 	snOSError (*task_handler)(void), 
 	snOSTaskRunType process_type);
 

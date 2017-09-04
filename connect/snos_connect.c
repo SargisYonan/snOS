@@ -1,17 +1,15 @@
 // Connect
-#include <list.h>
-#include <snos_alloc.h>
+#include "snos_connect.h"
+#include "list.h"
+#include "snos_alloc.h"
+#include "snos_error_codes.h"
 
-static list_t *transceiver_list = NULL;
+#include <stdlib.h>
+
+list_t *transceiver_list = NULL;
 
 // puts the transceiver in a queue that will be executed in a stack
-snOSTransceiver *snos_connect_initialize_channel(
-	snOSTask *handler, 
-	uint8_t (*is_byte_available)(void),
-	uint8_t (*packet_byte_receiver)(void), 
-	void (*packet_byte_transmitter)(uint8_t),
-	uint8_t max_packet_size
-	) {
+snOSTransceiver *snos_connect_initialize_channel(snOSTask *handler, uint8_t (*is_byte_available)(void),uint8_t (*packet_byte_receiver)(void), void (*packet_byte_transmitter)(uint8_t), uint8_t max_packet_size) {
 	snOSTransceiver *new_t = NULL;
 
 	if (!transceiver_list) {
@@ -20,9 +18,9 @@ snOSTransceiver *snos_connect_initialize_channel(
 
 	new_t = snos_alloc(sizeof(snOSTransceiver));
 	if (new_t) {
-		new_t->is_byte_available = is_byte_available
-		new_t->packet_byte_receiver = packet_byte_receiver
-		new_t->packet_byte_transmitter = packet_byte_transmitter
+		new_t->is_byte_available = is_byte_available;
+		new_t->packet_byte_receiver = packet_byte_receiver;
+		new_t->packet_byte_transmitter = packet_byte_transmitter;
 		new_t->handler = handler;
 		new_t->enabled = 1;
 		new_t->is_data_ready = 0;
@@ -38,23 +36,24 @@ snOSTransceiver *snos_connect_initialize_channel(
 		}
 		list_append(transceiver_list, new_t);
 	}
-	return snOSTransceiver;
+	return new_t;
 }
 
-snOSError snos_connect_send_packet(
-	snOSTransceiver *channel, 
-	uint8_t *data_ptr, 
-	uint64_t size
-	) {
+snOSError snos_connect_send_packet(snOSTransceiver *channel, uint8_t *data_ptr, uint64_t size) {
 	uint64_t itor = 0;
 	snOSError ret = snOS_SUCCESS;
 	if (channel) {
 		if (!(channel->enabled)) {
 			return snOS_CHANNEL_DISABLED;
 		}
+		channel->packet_byte_transmitter(SOH);
+		channel->packet_byte_transmitter(STX);
+
 		for(itor = 0; itor < size; itor++) {
 			channel->packet_byte_transmitter(data_ptr[itor]);
 		}
+
+		channel->packet_byte_transmitter(EOT);
 	}
 	return ret;
 }
@@ -69,10 +68,10 @@ snOSError snos_connect_start(snOSTransceiver *channel) {
 }
 
 snOSError snos_connect_stop(snOSTransceiver *channel) {
-	snOSError ret = SNOS_ERROR;
+	snOSError ret = snOS_ERROR;
 	if (channel) {
 		channel->enabled = 0;
-		ret = SNOS_SUCCESS;
+		ret = snOS_SUCCESS;
 	}
 	return ret;
 }
@@ -87,10 +86,11 @@ uint64_t snos_conenct_is_packet_available(snOSTransceiver *channel) {
 	return 0;
 }
 
-snOSError snos_connect_get_packet(snOSTransceiver *channel, void *data) {
+snOSError snos_connect_get_packet(snOSTransceiver *channel, void **data) {
 	if (channel) {
-		data = channel->data_received;
+		*data = channel->data_received;
 	}
+	return snOS_SUCCESS;
 }
 
 snOSError snos_connect_post_to_task(snOSTransceiver *channel) {
@@ -105,7 +105,7 @@ snOSError snos_receiver(void) {
 	list_move_cursor_to_head(transceiver_list);
 
 	while(1) {
-		list_get_cursor_data(transceiver_list, this_rx);
+		this_rx = (snOSTransceiver*)list_get_cursor_data(transceiver_list);
 
 		if (this_rx->is_byte_available() && this_rx->enabled) {
 			
@@ -113,14 +113,13 @@ snOSError snos_receiver(void) {
 
 			switch (this_rx->receive_machine->receiver_state) {
 				case SOH_STATE:
-					data_size = 0;
-					if (byte_in == (uint8_t)SOH_STATE) {
+					if (byte_in == SOH) {
 						this_rx->receive_machine->receiver_state = STX_STATE;
 					}
 					break;
 
 				case STX_STATE:
-					if (byte_in == (uint8_t)STX_STATE) {
+					if (byte_in == STX) {
 						this_rx->receive_machine->receiver_state = DATA_STATE;
 					} else {
 						this_rx->receive_machine->receiver_state = SOH_STATE;
@@ -168,7 +167,7 @@ snOSError snos_receiver(void) {
 								break;
 
 							case 0xCC:
-								if (byte_in == (uint8_t)EOT_STATE) {
+								if (byte_in == EOT) {
 									this_rx->receive_machine->receiver_state = EOT_STATE;
 								} else {
 									if (this_rx->receive_machine->byte_index < (this_rx->max_packet_size)) {
@@ -196,14 +195,14 @@ snOSError snos_receiver(void) {
 
 						
 					} else {
-						if (byte_in == (uint8_t)EOT_STATE) {
+						if (byte_in == EOT) {
 							this_rx->receive_machine->receiver_state = EOT_STATE;
 						}
 					}
 					break;
 
 				case EOT_STATE:
-						this_rx->data_received = (void*)(this_rx->receiver_machine->rx_buffer);
+						this_rx->data_received = (void*)(this_rx->receive_machine->rx_packet);
 						this_rx->is_data_ready = 1;
 						this_rx->received_data_size = this_rx->receive_machine->byte_index;
 						snos_connect_post_to_task(this_rx);
@@ -221,10 +220,12 @@ snOSError snos_receiver(void) {
 		}
 
 		if (this_rx == list_get_tail_data(transceiver_list)) {
-			break;
+			return snOS_SUCCESS;
 		} else {
 			list_move_cursor_right(transceiver_list);
-			list_get_cursor_data(transceiver_list, this_rx);
+			this_rx = (snOSTransceiver*)list_get_cursor_data(transceiver_list);
 		}
 	}
+
+	return snOS_SUCCESS;
 }
