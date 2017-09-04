@@ -1,36 +1,103 @@
-CC           = avr-gcc
-CFLAGS       = -Wall -Os -std=gnu99
-OBJCOPY      = objcopy
+# MICROCONTROLELR DEFINITIONS #
+SHELL := /bin/bash
 
-# include path to AVR library
-INCLUDE_PATH 	= /usr/lib/avr/include
+CC						= avr-gcc
+BURNER					= avrdude
+CC_AVR					= atmega328p
+F_CPU					= 16000000UL
+BURNER_AVR				= ATMEGA328P
+BURNER_PROGRAMMER		= Arduino
+COMPILER_PATH			= /dev/tty.usbmodem*
+OBJECT_COPY				= avr-objcopy
+BAUDRATE				= 115200
+###########################################
 
-INCLUDE_PATH 	+= -I system/
-INCLUDE_PATH	+= -I system/snos_error_codes/
-INCLUDE_PATH	+= -I system/snos_alloc/
+# CC GLOBAL DEFINES
+CC_GLOBAL_DEFINES 			= -D F_CPU=${F_CPU}
 
-INCLUDE_PATH	+= -I structures/
-INCLUDE_PATH	+= -I structures/list/
-INCLUDE_PATH	+= -I structures/snos_tasks/
+# MAIN SOURCE
+PLATFORM_CSOURCES	= platform/avr/main.c
 
-CSOURCES	+= snos.c
+####################
+# UART DRIVER & BUFFER
+PLATFORM_INCLUDES	+= -I platform/avr/drivers/uart_driver
 
-CSOURCES	+= system/snos_alloc/snos_alloc.c
+# UART PROTOCOL PLATFORM
+PLATFORM_INCLUDES += -I platform/avr/protocols/uart
 
-CSOURCES	+= structures/list/list.c
-CSOURCES	+= structures/snos_tasks/snos_task_manager.c
+####################
+# UART #
+PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/uart_driver.c
+# BUFFER #
+PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/buffer.c
+# snOS PLATFORM #
+PLATFORM_CSOURCES	+= platform/avr/protocols/uart/uart.c
+####################
+
+######################################################
+C_STD						= gnu99
+OBJECTS	 					= ./*.o
+EXECUTABLE					= jay
+########### COMPILER OPTIONS ##############
+CFLAGS						+= -Wall
+CFLAGS						+= -Werror
+CFLAGS						+= -Wextra
+CFLAGS						+= -Wimplicit
+CFLAGS						+= -std=${C_STD}
+# CC OPTIONS #
+# OPTIMIZATION FLAG
+CC_COMP_OPTIONS				+= -Os
+# UC DEF
+CC_COMP_OPTIONS				+= -mmcu=${CC_AVR}
+# GLOBAL DEFINES FLAGS
+CC_COMP_OPTIONS				+= ${CC_GLOBAL_DEFINES}
+# CC WARNING FLAGS
+CC_COMP_OPTIONS				+= ${CFLAGS}
+# HEADER FILES
+CC_COMP_OPTIONS				+= ${PLATFORM_INCLUDES}
+# SOURCE FILES
+CC_COMP_OPTIONS				+= -c ${CSOURCE}
+
+# CC LINKER OPTIONS #
+CC_LN_OPTIONS				+= -mmcu=${CC_AVR}
+CC_LN_OPTIONS				+= -Wl,-u,vfprintf
+CC_LN_OPTIONS				+= -lm
+CC_LN_OPTIONS				+= -lprintf_flt
+CC_LN_OPTIONS				+= -o${EXECUTABLE}.elf
+CC_LN_OPTIONS				+= ${OBJECTS}
+
+SNOS_INCLUDE_PATH	+= -I .
+SNOS_INCLUDE_PATH 	+= -I system/
+SNOS_INCLUDE_PATH	+= -I system/snos_error_codes/
+SNOS_INCLUDE_PATH	+= -I system/snos_alloc/
+
+SNOS_INCLUDE_PATH	+= -I structures/
+SNOS_INCLUDE_PATH	+= -I structures/list/
+SNOS_INCLUDE_PATH	+= -I structures/snos_tasks/
+
+SNOS_INCLUDE_PATH	+= -I connect/
+SNOS_CSOURCES	+= snos.c
+SNOS_CSOURCES	+= connect/snos_connect.c
+
+SNOS_CSOURCES	+= system/snos_alloc/snos_alloc.c
+
+SNOS_CSOURCES	+= structures/list/list.c
+SNOS_CSOURCES	+= structures/snos_tasks/snos_task_manager.c
 
 
 OBJECTS := *.o
 
-snos_substrate :
-	# compiling snos.c
-	$(CC) $(CFLAGS) -I ${INCLUDE_PATH} -c ${CSOURCES}
+all:
+	# compiling snos
+	${CC} ${CC_COMP_OPTIONS} $(CFLAGS) ${SNOS_INCLUDE_PATH} ${PLATFORM_INCLUDES} -c ${SNOS_CSOURCES} ${PLATFORM_CSOURCES}
+	# making platform
+	${CC} ${CC_LN_OPTIONS}
 
-snOS : snos_substrate
-	# linking object code to binary
-	$(CC) -o snOS ${OBJECTS} -lm
-	rm -f *.o
+	${OBJECT_COPY} -j .text -j .data -O ihex ${EXECUTABLE}.elf ${EXECUTABLE}.hex
+
+burn:
+	${BURNER} -V -P ${COMPILER_PATH} -p ${BURNER_AVR} -c ${BURNER_PROGRAMMER} -e -b ${BAUDRATE} -U flash:w:${EXECUTABLE}.hex
+	#${BURNER} -F -p ${BURNER_AVR} -c ${BURNER_PROGRAMMER} -e -b ${BAUDRATE} -U flash:w:${EXECUTABLE}.hex
 
 clean:
-	rm -f *.OBJ *.LST *.o *.gch *.out *.hex *.map
+	rm *.elf *.hex *.o
