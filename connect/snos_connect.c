@@ -86,9 +86,20 @@ uint64_t snos_conenct_is_packet_available(snOSTransceiver *channel) {
 	return 0;
 }
 
-snOSError snos_connect_get_packet(snOSTransceiver *channel, void **data) {
+snOSError snos_connect_get_packet(snOSTransceiver *channel, uint8_t *data, uint64_t n) {
+	uint64_t copy_byte = 0;
+	uint64_t i = 0;
 	if (channel) {
-		*data = channel->data_received;
+
+		if (n < channel->received_data_size) {
+			copy_byte = n;
+		} else {
+			copy_byte = channel->received_data_size;
+		}
+
+		for (i = 0; i < copy_byte; i++) {
+			data[i] = channel->data_received[i];
+		}
 	}
 	return snOS_SUCCESS;
 }

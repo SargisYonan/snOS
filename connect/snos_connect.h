@@ -31,7 +31,7 @@ struct snos_transceiver_s {
 	uint8_t enabled;
 	uint8_t is_data_ready;
 	uint64_t received_data_size;
-	void *data_received;
+	uint8_t *data_received;
 	snOSReceiveMachine *receive_machine;
 };
 typedef struct snos_transceiver_s snOSTransceiver;
@@ -45,7 +45,7 @@ snOSError snos_connect_stop(snOSTransceiver *channel);
 
 // returns number of available bytes
 uint64_t snos_conenct_is_packet_available(snOSTransceiver *channel);
-snOSError snos_connect_get_packet(snOSTransceiver *channel, void **data);
+snOSError snos_connect_get_packet(snOSTransceiver *channel, uint8_t *data, uint64_t n);
 snOSError snos_connect_post_to_task(snOSTransceiver *channel);
 // runs every transceiver's receive function
 snOSError snos_receiver(void);

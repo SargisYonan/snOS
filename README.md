@@ -1,5 +1,5 @@
 # snOS
-### Sensor Node Operating System v0.1
+### Sensor Node Operating System v0.8
 
 ## What Is snOS?
 snOS is a multi-threaded events and service framework with IoT in mind for embedded systems.
