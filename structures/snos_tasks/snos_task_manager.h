@@ -8,11 +8,13 @@
 typedef enum snOSTaskType {
 	RUN_FOREVER, 
 	RUN_ONCE, 
-	RUN_ON_REQUEST
+	RUN_ON_REQUEST,
 } snOSTaskRunType;
 
 struct snos_system_task_s {
 	snOSError (*task_handler)(void);
+	uint8_t *mailbox;
+	uint8_t mailbox_length;
 	snOSTaskRunType process_type;
 	uint8_t requested;
 	uint8_t lock;
@@ -28,6 +30,10 @@ snOSTask *snos_task_manager_add_task(
 	snOSTaskRunType process_type);
 
 snOSError snos_scheduler_run_next_task(void);
+
+snOSError snos_task_write_message(snOSTask *task, uint8_t* message, uint8_t length);
+uint8_t *snos_task_get_message(snOSTask *task);
+uint8_t snos_task_get_message_length(snOSTask *task);
 
 snOSError snos_task_set_request(snOSTask *task);
 uint8_t snos_task_requested(snOSTask *task);
