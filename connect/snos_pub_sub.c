@@ -10,14 +10,16 @@
 typedef struct pub_sub_task_s {
 	snOSTask *handler;
 	uint8_t *subscribed_topic;
-	uint8_t *topic_length;
+	uint8_t topic_length;
 } snOSSub;
 
-static snOSTranceiver *__pub_sub_channel = NULL;
+static snOSTransceiver *__pub_sub_channel = NULL;
 static uint8_t __initialized = 0;
 static uint8_t __enabled = 0;
 static list_t *__subscription_list = NULL;
 static snOSTask *__pub_sub_task = NULL;
+
+static uint8_t _already_subscribed(snOSTask *task);
 extern snOSError __snos_pub_sub_handler(void);
 
 snOSError snos_initialize_pub_sub(uint8_t (*is_byte_available)(void),uint8_t (*packet_byte_receiver)(void), void (*packet_byte_transmitter)(uint8_t)) {
@@ -32,10 +34,10 @@ snOSError snos_initialize_pub_sub(uint8_t (*is_byte_available)(void),uint8_t (*p
 	}
 
 	if (!__pub_sub_channel && __subscription_list) {
-		ret = __pub_sub_channel = snos_connect_initialize_channel(__pub_sub_task, is_byte_available, packet_byte_receiver, packet_byte_transmitter, MAX_PUB_SUB_PACKET_SIZE);
+		__pub_sub_channel = snos_connect_initialize_channel(__pub_sub_task, is_byte_available, packet_byte_receiver, packet_byte_transmitter, MAX_PUB_SUB_PACKET_SIZE);
 	}
 
-	if (ret == snOS_SUCCESS) {
+	if (__pub_sub_channel) {
 		__initialized = 1;
 		__enabled = 0;
 	}
@@ -63,7 +65,7 @@ snOSError snos_stop_pub_sub(void) {
 	}
 }
 
-snOSError snos_pub_sub_handler(void) {
+extern snOSError __snos_pub_sub_handler(void) {
 	snOSSub *sub = NULL;
 	uint64_t packet_length = 0;
 	uint8_t *sent_packet = NULL;
@@ -80,18 +82,18 @@ snOSError snos_pub_sub_handler(void) {
 			sent_packet = snos_alloc(sizeof(uint8_t) * packet_length + 1);
 			
 			if (!sent_packet) {
-				return snOS_OOM_ERROR;
+				return snOS_SYSTEM_OOM_ERROR;
 			}
 
 			snos_connect_get_packet(__pub_sub_channel, sent_packet, packet_length);
 
 			sent_topic_length = sent_packet[0];
-			sent_topic = snos_alloc(sizeof(uint8_t) * topic_length + 1);
+			sent_topic = snos_alloc(sizeof(uint8_t) * sent_topic_length + 1);
 			
 			if (sent_topic) {
-				strncpy(sent_topic, &sent_packet[1], topic_length);
+				memcpy(sent_topic, &sent_packet[1], sent_topic_length);
 			} else {
-				return snOS_OOM_ERROR;
+				return snOS_SYSTEM_OOM_ERROR;
 			}
 
 			sent_message_length = sent_packet[sent_topic_length + 1];
@@ -99,9 +101,9 @@ snOSError snos_pub_sub_handler(void) {
 			sent_message = snos_alloc(sizeof(uint8_t) * sent_message_length + 1);
 			
 			if (sent_message) {
-				strncpy(sent_message, &sent_packet[sent_topic_length + 2], sent_message_length);
+				memcpy(sent_message, &sent_packet[sent_topic_length + 2], sent_message_length);
 			} else {
-				return snOS_OOM_ERROR;
+				return snOS_SYSTEM_OOM_ERROR;
 			}
 
 			snos_free(sent_packet);
@@ -110,9 +112,9 @@ snOSError snos_pub_sub_handler(void) {
 			while ((sub = ((snOSSub*)list_get_cursor_data(__subscription_list))) != (snOSSub*)list_get_tail_data(__subscription_list)) {
 				if (sub) {
 					if (sub->topic_length == sent_topic_length) {
-						if (strncmp(sub->subscribed_topic, sent_topic, sent_topic_length) == 0) {
-							snos_task_set_request(sub->handling_task);
-							snos_task_write_message(sub->handling_task, sent_message, sent_message_length);
+						if (memcpy(sub->subscribed_topic, sent_topic, sent_topic_length) == 0) {
+							snos_task_set_request(sub->handler);
+							snos_task_write_message(sub->handler, sent_message, sent_message_length);
 						}	
 					}
 				} else {
@@ -127,29 +129,60 @@ snOSError snos_pub_sub_handler(void) {
 		} else {
 			return snOS_ERROR;
 		}
-	}
-
-		
+	} else {
+		return snOS_ERROR;
+	}	
 }
 
-snOSError snos_publish(char *topic, uint8_t topic_n, char *message, uint8_t message_n);
+snOSError snos_publish(char *topic, uint8_t topic_n, char *message, uint8_t message_n) {
+	uint8_t *payload = NULL;
 
+	if (__initialized == 1 && __enabled == 1) {
+		payload = snos_alloc(sizeof(uint8_t) * (topic_n + 1 + message_n + 1));
+		if (payload) {
+			payload[0] = topic_n;
+			memcpy(&payload[1], (uint8_t*)topic, topic_n);
+			payload[topic_n + 1] = message_n;
+			memcpy(&payload[topic_n + 2], (uint8_t*)message, message_n);
 
-snOSError snos_subscribe(snOSTask *handling_task, char *topic, uint8_t topic_n) {
+			snos_connect_send_packet(__pub_sub_channel, payload, topic_n + 1 + message_n + 1);
+			snos_free(payload);
+
+			return snOS_SUCCESS;
+		} else {
+			return snOS_SYSTEM_OOM_ERROR;
+		}
+	} else {
+		return snOS_ERROR;
+	}
+}
+
+snOSError snos_subscribe(snOSTask *handler, char *topic, uint8_t topic_n) {
 	snOSSub *new_sub = NULL;
 
 	if (__initialized == 1) {
+
+		if (_already_subscribed(handler)) {
+			return snOS_ERROR;
+		}
+
 		new_sub = snos_alloc(sizeof(snOSSub));
 
 		if (new_sub) {
-			new_sub->handler = handling_task;
-			new_sub->subscribed_topic = topic;
+			new_sub->handler = handler;
+
+			new_sub->subscribed_topic = snos_alloc(sizeof(uint8_t) * topic_n);
+			if (new_sub->subscribed_topic) {
+				memcpy(new_sub->subscribed_topic, (uint8_t*)topic, topic_n);
+			} else {
+				return snOS_SYSTEM_OOM_ERROR;
+			}
 			new_sub->topic_length = topic_n;
 
 			list_append(__subscription_list, new_sub);
 			return snOS_SUCCESS;
 		} else {
-			return snOS_OOM_ERROR;
+			return snOS_SYSTEM_OOM_ERROR;
 		}
 	} else {
 		return snOS_ERROR;
@@ -163,7 +196,8 @@ snOSError snos_unsubscribe(snOSTask *subscribed_task) {
 	if (__subscription_list && __initialized == 1) {
 		list_move_cursor_to_head(__subscription_list);
 		while ((sub = ((snOSSub*)list_get_cursor_data(__subscription_list))) != (snOSSub*)list_get_tail_data(__subscription_list)) {
-			if (sub && (sub->handler == subscribed_topic)) {
+			if (sub && (sub->handler == subscribed_task)) {
+				snos_free(sub->subscribed_topic);
 				list_detete_current_item(__subscription_list);
 				return snOS_SUCCESS;
 			} else {
@@ -173,4 +207,21 @@ snOSError snos_unsubscribe(snOSTask *subscribed_task) {
 	}
 
 	return snOS_ERROR;
+}
+
+static uint8_t _already_subscribed(snOSTask *task) {
+	snOSSub *sub = NULL;
+
+	if (__subscription_list && __initialized == 1) {
+		list_move_cursor_to_head(__subscription_list);
+		while ((sub = ((snOSSub*)list_get_cursor_data(__subscription_list))) != (snOSSub*)list_get_tail_data(__subscription_list)) {
+			if (sub && (sub->handler == task)) {
+				return 1;
+			} else {
+				list_move_cursor_right(__subscription_list);
+			}
+		}
+	}
+
+	return 0;
 }
