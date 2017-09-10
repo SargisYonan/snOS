@@ -75,6 +75,7 @@ SNOS_INCLUDE_PATH	+= -I .
 SNOS_INCLUDE_PATH 	+= -I system/
 SNOS_INCLUDE_PATH	+= -I system/snos_error_codes/
 SNOS_INCLUDE_PATH	+= -I system/snos_alloc/
+SNOS_INCLUDE_PATH	+= -I system/snos_hash/
 
 SNOS_INCLUDE_PATH	+= -I structures/
 SNOS_INCLUDE_PATH	+= -I structures/list/
@@ -87,6 +88,7 @@ SNOS_CSOURCES	+= connect/snos_connect.c
 SNOS_CSOURCES	+= connect/snos_pub_sub.c
 
 SNOS_CSOURCES	+= system/snos_alloc/snos_alloc.c
+SNOS_CSOURCES	+= system/snos_hash/snos_hash.c
 
 SNOS_CSOURCES	+= structures/list/list.c
 SNOS_CSOURCES	+= structures/snos_tasks/snos_task_manager.c

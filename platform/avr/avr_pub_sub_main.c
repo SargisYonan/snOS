@@ -6,8 +6,8 @@
 
 #include <stdlib.h>
 
-#define LIGHT_SWITCHER 1
-//#define BUTTON_SENDER 1
+//#define LIGHT_SWITCHER 1
+#define BUTTON_SENDER 1
 
 #ifdef BUTTON_SENDER
     extern snOSError button_event_checker(void) {
@@ -44,9 +44,6 @@
 #ifdef LIGHT_SWITCHER
     extern snOSError switch_light_service(void) {
         uint8_t *message = snos_task_get_message(snos_this_task_id());
-        
-        #include "led.h"
-        turn_on_light();
 
         if (snos_task_get_message_length(snos_this_task_id()) == 1) {
             switch (message[0]) {
