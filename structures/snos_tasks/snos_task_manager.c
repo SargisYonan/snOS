@@ -36,6 +36,8 @@ snOSTask *snos_task_manager_add_task(
 		new_task->task_handler = task_handler;
 		new_task->process_type = process_type;
 		new_task->lock = 0;	
+		new_task->mailbox = NULL;
+		new_task->mailbox_length = 0;
 		list_append(snOS_tasks, new_task);
 	}
 
@@ -108,6 +110,45 @@ snOSError snos_scheduler_run_next_task(void) {
 	}
 
 	return return_code;
+}
+
+snOSError snos_task_write_message(snOSTask *task, uint8_t* message, uint8_t length) {
+	uint8_t i = 0;
+
+	if (task) {
+		if (message) {
+			snos_free(task->mailbox);
+		}
+
+		task->mailbox_length = length;
+		task->mailbox = snos_alloc(sizeof(uint8_t) * length);
+		if (task->mailbox) {
+			for (i = 0; i < length; i++) {
+				task->mailbox[i] = message[i];
+			}
+			return snOS_SUCCESS;
+		} else {
+			return snOS_SYSTEM_OOM_ERROR;
+		}
+	} else {
+		return snOS_ERROR;
+	}
+}
+
+uint8_t *snos_task_get_message(snOSTask *task) {
+	if (task) {
+		return task->mailbox;
+	} else {
+		return NULL;
+	}
+}
+
+uint8_t snos_task_get_message_length(snOSTask *task) {
+	if (task) {
+		return task->mailbox_length;
+	} else {
+		return 0;
+	}
 }
 
 snOSError snos_task_set_request(snOSTask *task) {

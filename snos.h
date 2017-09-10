@@ -3,6 +3,7 @@
 
 #define SNOS_CONNECT (1)
 #include <snos_connect.h>
+#include <snos_pub_sub.h>
 #include <snos_task_manager.h>
 #include <snos_alloc.h>
 #include <snos_error_codes.h>

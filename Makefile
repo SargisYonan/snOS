@@ -16,11 +16,13 @@ BAUDRATE				= 115200
 CC_GLOBAL_DEFINES 			= -D F_CPU=${F_CPU}
 
 # MAIN SOURCE
-PLATFORM_CSOURCES	= platform/avr/main.c
+PLATFORM_CSOURCES	= platform/avr/avr_pub_sub_main.c
 
 ####################
 # UART DRIVER & BUFFER
 PLATFORM_INCLUDES	+= -I platform/avr/drivers/uart_driver
+PLATFORM_INCLUDES	+= -I platform/avr/protocols/leds
+PLATFORM_INCLUDES	+= -I platform/avr/protocols/button
 
 # UART PROTOCOL PLATFORM
 PLATFORM_INCLUDES += -I platform/avr/protocols/uart
@@ -28,6 +30,9 @@ PLATFORM_INCLUDES += -I platform/avr/protocols/uart
 ####################
 # UART #
 PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/uart_driver.c
+PLATFORM_CSOURCES	+= platform/avr/protocols/leds/led.c
+PLATFORM_CSOURCES	+= platform/avr/protocols/button/button.c
+
 # BUFFER #
 PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/buffer.c
 # snOS PLATFORM #
@@ -37,7 +42,7 @@ PLATFORM_CSOURCES	+= platform/avr/protocols/uart/uart.c
 ######################################################
 C_STD						= gnu99
 OBJECTS	 					= ./*.o
-EXECUTABLE					= jay
+EXECUTABLE					= snos_avr_test
 ########### COMPILER OPTIONS ##############
 CFLAGS						+= -Wall
 CFLAGS						+= -Werror
@@ -76,8 +81,10 @@ SNOS_INCLUDE_PATH	+= -I structures/list/
 SNOS_INCLUDE_PATH	+= -I structures/snos_tasks/
 
 SNOS_INCLUDE_PATH	+= -I connect/
+
 SNOS_CSOURCES	+= snos.c
 SNOS_CSOURCES	+= connect/snos_connect.c
+SNOS_CSOURCES	+= connect/snos_pub_sub.c
 
 SNOS_CSOURCES	+= system/snos_alloc/snos_alloc.c
 
