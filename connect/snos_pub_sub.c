@@ -91,7 +91,7 @@ extern snOSError __snos_pub_sub_handler(void) {
 			sent_topic = snos_alloc(sizeof(uint8_t) * sent_topic_length + 1);
 			
 			if (sent_topic) {
-				memcpy(sent_topic, &sent_packet[1], sent_topic_length);
+				snos_copy(sent_topic, &sent_packet[1], sent_topic_length);
 			} else {
 				return snOS_SYSTEM_OOM_ERROR;
 			}
@@ -101,7 +101,7 @@ extern snOSError __snos_pub_sub_handler(void) {
 			sent_message = snos_alloc(sizeof(uint8_t) * sent_message_length + 1);
 			
 			if (sent_message) {
-				memcpy(sent_message, &sent_packet[sent_topic_length + 2], sent_message_length);
+				snos_copy(sent_message, &sent_packet[sent_topic_length + 2], sent_message_length);
 			} else {
 				return snOS_SYSTEM_OOM_ERROR;
 			}
@@ -109,16 +109,18 @@ extern snOSError __snos_pub_sub_handler(void) {
 			snos_free(sent_packet);
 
 			list_move_cursor_to_head(__subscription_list);
-			while ((sub = ((snOSSub*)list_get_cursor_data(__subscription_list))) != (snOSSub*)list_get_tail_data(__subscription_list)) {
-				if (sub) {
-					if (sub->topic_length == sent_topic_length) {
-						if (memcpy(sub->subscribed_topic, sent_topic, sent_topic_length) == 0) {
-							snos_task_set_request(sub->handler);
-							snos_task_write_message(sub->handler, sent_message, sent_message_length);
-						}	
-					}
-				} else {
+			sub = (snOSSub*)list_get_cursor_data(__subscription_list);
+			while (sub) {
+				if (sub->topic_length == sent_topic_length) {
+					if (snos_mem_cmp(sub->subscribed_topic, sent_topic, sent_topic_length) == 0) {
+						snos_task_set_request(sub->handler);
+						snos_task_write_message(sub->handler, sent_message, sent_message_length);
+					}	
+				}
+				if (sub != (snOSSub*)list_get_cursor_data(__subscription_list)) {
 					list_move_cursor_right(__subscription_list);
+				} else {
+					break;
 				}
 			}
 
@@ -141,9 +143,9 @@ snOSError snos_publish(char *topic, uint8_t topic_n, char *message, uint8_t mess
 		payload = snos_alloc(sizeof(uint8_t) * (topic_n + 1 + message_n + 1));
 		if (payload) {
 			payload[0] = topic_n;
-			memcpy(&payload[1], (uint8_t*)topic, topic_n);
+			snos_copy(&payload[1], (uint8_t*)topic, topic_n);
 			payload[topic_n + 1] = message_n;
-			memcpy(&payload[topic_n + 2], (uint8_t*)message, message_n);
+			snos_copy(&payload[topic_n + 2], (uint8_t*)message, message_n);
 
 			snos_connect_send_packet(__pub_sub_channel, payload, topic_n + 1 + message_n + 1);
 			snos_free(payload);
@@ -173,7 +175,7 @@ snOSError snos_subscribe(snOSTask *handler, char *topic, uint8_t topic_n) {
 
 			new_sub->subscribed_topic = snos_alloc(sizeof(uint8_t) * topic_n);
 			if (new_sub->subscribed_topic) {
-				memcpy(new_sub->subscribed_topic, (uint8_t*)topic, topic_n);
+				snos_copy(new_sub->subscribed_topic, (uint8_t*)topic, topic_n);
 			} else {
 				return snOS_SYSTEM_OOM_ERROR;
 			}

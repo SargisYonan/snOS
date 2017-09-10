@@ -6,11 +6,11 @@
 
 #include <stdlib.h>
 
-//#define LIGHT_SWITCHER 1
-#define BUTTON_SENDER 1
+#define LIGHT_SWITCHER 1
+//#define BUTTON_SENDER 1
 
 #ifdef BUTTON_SENDER
-    snOSError button_event_checker(void) {
+    extern snOSError button_event_checker(void) {
         static uint8_t button_state = BUTTON_OFF;
 
         button_state = get_button_state();
@@ -24,7 +24,7 @@
         return snOS_SUCCESS;
     }
 
-    snOSError switch_local_light(void) {
+    extern snOSError switch_local_light(void) {
         switch (get_button_state()) {
             case BUTTON_ON:
                 turn_on_light();
@@ -42,8 +42,12 @@
 #endif 
 
 #ifdef LIGHT_SWITCHER
-    snOSError switch_light_service(void) {
+    extern snOSError switch_light_service(void) {
         uint8_t *message = snos_task_get_message(snos_this_task_id());
+        
+        #include "led.h"
+        turn_on_light();
+
         if (snos_task_get_message_length(snos_this_task_id()) == 1) {
             switch (message[0]) {
                 case '1':
@@ -76,7 +80,7 @@ int main (void) {
 
     #ifdef LIGHT_SWITCHER
         // Running on Controller 2
-        snos_subscribe(snos_new_task(&switch_light_service, RUN_ON_REQUEST);, "button", 6);
+        snos_subscribe(snos_new_task(&switch_light_service, RUN_ON_REQUEST), "button", 6);
     #endif
 
     snos_start_pub_sub();

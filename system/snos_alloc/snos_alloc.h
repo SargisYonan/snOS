@@ -26,4 +26,24 @@ BY DEFAULT:
 */
 void snos_free(void *ptr);
 
+/* 
+BY DEFAULT:
+    The snos_copy(void *dst, void *src, uint64_t n) performs a copy of n bytes
+    from src to dst 
+
+    the number of bytes copied is returned
+*/
+uint64_t snos_copy(uint8_t *dst, uint8_t *src, uint64_t n);
+
+/* 
+BY DEFAULT:
+    The snos_mem_cmp compares n bytes of memory between src_a and src_b
+    it returns:
+    0 : both pointers point to n identical bytes of memory
+    -1 : otherwise
+
+    the number of bytes copied is returned
+*/
+int8_t snos_mem_cmp(uint8_t *src_a, uint8_t *src_b, uint64_t n);
+
 #endif
