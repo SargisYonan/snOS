@@ -31,6 +31,7 @@ uint32_t snos_get_hash_from_array(const uint8_t *src) {
 	for (i = 0; i < FNV_1A_HASH_SIZE; i++) {
 		vector = src[i];
 		hash |= (uint32_t)(vector << (i * 8));
+		vector &= 0x00000000;
 	}
 
 	return hash;
@@ -45,8 +46,7 @@ uint8_t snos_store_hash(const uint32_t hash, uint8_t *src) {
 	}
 
 	for (i = 0; i < FNV_1A_HASH_SIZE; i++) {
-		src[i] = (uint8_t)(__hash & 0x000000FF);
-		__hash >>= (i * 8);
+		src[i] = (uint8_t)((__hash >> (i * 8)) & 0x000000FF);
 	}
 
 	return i;

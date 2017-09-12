@@ -64,7 +64,7 @@
 #endif
 
 int main (void) {
-    uart_initialize(9600);
+    uart_initialize(115200);
     snos_initialize();    
 
     snos_initialize_pub_sub(&(byte_is_available), &(receive_byte), &(send_byte));

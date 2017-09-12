@@ -131,7 +131,7 @@ extern snOSError __snos_pub_sub_handler(void) {
 					#endif						
 					{
 						#ifdef PUB_SUB_HASH_STRINGS
-							sent_message_length = sent_packet[HASH_SIZE + 1];
+							sent_message_length = sent_packet[HASH_SIZE];
 						#else
 							sent_message_length = sent_packet[sent_topic_length + 1];
 						#endif
@@ -140,7 +140,7 @@ extern snOSError __snos_pub_sub_handler(void) {
 			
 						if (sent_message) {
 							#ifdef PUB_SUB_HASH_STRINGS
-								snos_copy(sent_message, &sent_packet[HASH_SIZE + 2], sent_message_length);
+								snos_copy(sent_message, &sent_packet[HASH_SIZE + 1], sent_message_length);
 							#elif PUB_SUB_TRANSMIT_STRING
 								snos_copy(sent_message, &sent_packet[sent_topic_length + 2], sent_message_length);
 							#endif
@@ -177,8 +177,10 @@ extern snOSError __snos_pub_sub_handler(void) {
 
 snOSError snos_publish(char *topic, uint8_t topic_n, char *message, uint8_t message_n) {
 	uint8_t *payload = NULL;
-	uint32_t hashed_topic = 0;
-
+	#ifdef PUB_SUB_HASH_STRINGS
+		uint32_t hashed_topic = 0;
+	#endif
+		
 	if (__initialized == 1 && __enabled == 1) {
 
 		#ifdef PUB_SUB_HASH_STRINGS
@@ -194,7 +196,7 @@ snOSError snos_publish(char *topic, uint8_t topic_n, char *message, uint8_t mess
 				snos_store_hash(hashed_topic, payload);
 				payload[HASH_SIZE] = message_n;
 				snos_copy(&payload[HASH_SIZE + 1], (uint8_t*)message, message_n);
-				snos_connect_send_packet(__pub_sub_channel, payload, HASH_SIZE + 1 + message_n + 1);
+				snos_connect_send_packet(__pub_sub_channel, payload, HASH_SIZE + message_n + 1);
 			#else
 				payload[0] = topic_n;
 				snos_copy(&payload[1], (uint8_t*)topic, topic_n);
