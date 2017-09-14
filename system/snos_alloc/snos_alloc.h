@@ -14,7 +14,7 @@ BY DEFAULT:
 	must therefore be linked.
 */
 
-void *snos_alloc(uint64_t size);
+void *snos_alloc(const uint64_t size);
 
 /* 
 BY DEFAULT:
@@ -33,7 +33,7 @@ BY DEFAULT:
 
     the number of bytes copied is returned
 */
-uint64_t snos_copy(uint8_t *dst, uint8_t *src, uint64_t n);
+uint64_t snos_copy(uint8_t *dst, const uint8_t *src, const uint64_t n);
 
 /* 
 BY DEFAULT:
@@ -44,6 +44,6 @@ BY DEFAULT:
 
     the number of bytes copied is returned
 */
-int8_t snos_mem_cmp(uint8_t *src_a, uint8_t *src_b, uint64_t n);
+int8_t snos_mem_cmp(const uint8_t *src_a, const uint8_t *src_b, const uint64_t n);
 
 #endif

@@ -112,7 +112,7 @@ snOSError snos_scheduler_run_next_task(void) {
 	return return_code;
 }
 
-snOSError snos_task_write_message(snOSTask *task, uint8_t* message, uint8_t length) {
+snOSError snos_task_write_message(snOSTask *task, const uint8_t* message, const uint8_t length) {
 	uint8_t i = 0;
 
 	if (task) {

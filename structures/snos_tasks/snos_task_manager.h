@@ -31,7 +31,7 @@ snOSTask *snos_task_manager_add_task(
 
 snOSError snos_scheduler_run_next_task(void);
 
-snOSError snos_task_write_message(snOSTask *task, uint8_t* message, uint8_t length);
+snOSError snos_task_write_message(snOSTask *task, const uint8_t* message, const uint8_t length);
 uint8_t *snos_task_get_message(snOSTask *task);
 uint8_t snos_task_get_message_length(snOSTask *task);
 
