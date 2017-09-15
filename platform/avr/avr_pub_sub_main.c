@@ -16,9 +16,9 @@
         button_state = get_button_state();
 
         if (button_state == BUTTON_ON) {
-            snos_publish("button", 6, "1", 1);
+            snos_publish("button", 6, '1', 1);
         } else {
-            snos_publish("button", 6, "0", 1);
+            snos_publish("button", 6, '0', 1);
         }
         
         return snOS_SUCCESS;

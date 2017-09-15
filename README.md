@@ -15,7 +15,7 @@ sending packets of data to and from eachother. These packets have the ability to
 raise event flags and trigger thread executions on a remote system also running snOS. 
 
 ## How to use snOS
-Setting up snOS for you environment is as simple as writing a couple of port subroutines.
+Setting up snOS for you environment is as simple as writing a couple of port subroutines and setting up a serial link.
 ### Setup Overview
 <dl>
 <dt>Layer 1: The Physical Layer</dt>
@@ -41,9 +41,7 @@ everyday microcomputer tasks.
 <dt>Layer 2: The Bare Metal Bootloader</dt>
 
 Required:
-snOS doesn't require much setup from the user, but a couple of port functions must
-be written before hand. 
--- todo: write timer documentation --
+snOS doesn't require much setup from the user, but a couple of port functions must be written before hand. 
 
 Optional:
 For the optional networking capabilities of snOS, a serial driver is required.
@@ -53,8 +51,10 @@ The required functions created to communicate over serial must include:
 
   1. A single byte receiving function with the following prototype:
   `uint8_t receive_byte(void);`
-  2. A signle byte transmit function with the following prototype:
+  2. A single byte transmit function with the following prototype:
   `void send_byte(uint8_t byte);`
+  3. A boolean returning is_available function that would report whether or not a but is awaiting in the serial RX buffer:
+  `bool byte_is_available(void);`
   
 snOS thrives in a mult-sensor network environment. These sensors must of course
 be configured to work for a given device. The drivers for these sensors must be written,
@@ -64,10 +64,21 @@ before loading snOS onto the board.
 <dt>Layer 3: The snOS Layer</dt>
 
 Once the initializing bootloading functions that load the system drivers 
-(interrupts, serial, and sensors) are called, a sequence of snOS calls 
-must be executed in the following order:
+(interrupts, serial, and sensors) are called, a sequence of snOS Connect calls must be issued. See the snOS Connect section for communication instructions.
 
-  1. `snos_initialize()` -- initializes the data structures used by snOS
+</dl>
+      
+## snOS Connect
+
+snOS Connect is the networking arm of this project that allows the embedded system running snOS to connect to other sensor nodes and to other networks like the Internet or a snOS LAN. 
+Using snOS Connect is optional, but it is really what makes snOS a useful abstraction on an embedded system.
+To use this feature, a serial link must be physically established between two or more sensor nodes. A common baudrate on the UART/USART channel must be established between all nodes. As long as the correct snOS port functions have been written, the systems can now communicate and trigger events on eachother with out further hardware or port setup.
+Once set up, multiple controllers can create and send packets to and from eachother to interrupt the work flow and program counters of other controllers in the network. There are two methods of using a snOS Connect system.
+
+#### The Packet Callback Method
+  Note: See snOS/platform/avr/avr_channel_talk_main.c for example code on this method.
+
+  1. `snos_initialize()` -- initializes the data structures used by snOS. Must be called before any other snOS functions are used.
   2. `snOSError snos_new_task(snOSError (*task_handler)(void), snOSTaskRunType process_type)` -- creates a new "task"
      A task is simply a thread entry function. Tasks should be small, not really on hard timing, use static memory to
      retain any data that must be preserved. The prototype of a task is as follows:
@@ -83,23 +94,29 @@ must be executed in the following order:
      repeat this step as desired.
      
    3. (optional -- required if using snOS Connect - the sensor node component)
-      From within a task handler function definition, call:
-      `snos_connect_initialize_channel(snOSTask *handler,uint8_t (*packet_byte_receiver)(void),void (*packet_byte_transmitter)(uint8_t));`
-      handler - the task handler pointer returned by `snos_task_id()`
-      packet_byte_receiver/packet_byte_transmitter - a pointer to the serial byte receive/transmit function defined in Layer 2
+      while initializing a communication channel, call:
+      `snos_connect_initialize_channel();`
+      handler
+        Note: the task handler pointer can be returned by `snos_task_id()` from within the task calling snos_connect_initialize_channel
 
       Then call `snos_connect_start()`
       
    4. After setting up the snOS layer, simply call: `snos_start()`
       The system will now begin snOS and remain in this mode until reset or externally exited.
-      
-</dl>
-      
-## snOS Connect
 
-snOS Connect is the networking arm of this project that allows the embedded system running snOS to connect to other sensor nodes and to other networks like the Internet. 
-Using snOS Connect is optional, but it is really what makes snOS a useful abstraction on an embedded system.
-To use this feature, a serial link must be physically established between two or more sensor nodes. A common baudrate on the UART/USART channel must be established between all nodes. As long as the correct snOS port functions have been written, the systems can now communicate and trigger events on eachother with out further hardware or port setup.
+    5. Using `snos_connect_send_packet()`, a message can be sent on the network.
+
+#### The snOS Pub/Sub Method
+Note: See snOS/platform/avr/avr_pub_sub_main.c for example code on this method.
+
+    1. Call `snos_initialize_pub_sub(&(byte_is_available), &(receive_byte), &(send_byte));` to initialize the physical communication hardware with the snOS system.
+
+    2. Setup at least one snOSTask* using `snos_new_task()`. 
+
+    3. call `snos_subscribe(snOSTask*, "topic", strlen("topic"));`
+    snOSTask* can be returned by the initial call to `snos_new_task()` or from within the task being run, call `snos_task_id()`
+
+    4. On calls to `snos_publish("topic", strlen("topic"), "message", strlen("message"));` on the same snOS network, all subscribed tasks on the network will be queued for running.
 
 ### How snOS Connect Works
 
