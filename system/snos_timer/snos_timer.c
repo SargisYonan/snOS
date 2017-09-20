@@ -1,14 +1,19 @@
 #include "snos_timer.h"
 #include "snos_alloc.h"
+#include "snos_port.h"
+
 #include "list.h"
+
+#include <stdlib.h>
 
 static uint8_t __timer_enabled = 0;
 static uint8_t __timer_init = 0;
-static list_t __timer_list = NULL;
+static list_t *__timer_list = NULL;
 
-static snOSError _initialize_timers(void) {
+snOSError initialize_snos_timers(void) {
 	__timer_list = list_create();
 	if (__timer_list) {
+		__timer_init = 1;
 		return snOS_SUCCESS;
 	} else {
 		return snOS_SYSTEM_OOM_ERROR;
@@ -30,15 +35,20 @@ void snos_tick(void) {
 	        elapsed_time = this_time - last_time;
 	    }
 	}
+
 	list_move_cursor_to_head(__timer_list);
 	while (1) {
+
+		#include "led.h"
+		turn_on_light();
+		
 		_timer = list_get_cursor_data(__timer_list);
 
-		if (_timer->enabled) {
+		if (_timer->enabled) {			
 			_timer->elapsed_ms += elapsed_time;
+
 			if (_timer->elapsed_ms >= _timer->duration_ms) {
-				_timer->elapsed_time = 0;
-				_timer->enabled = 0;
+				_timer->elapsed_ms = 0;
 				_timer->timer_callback();
 			}
 		}
@@ -54,6 +64,8 @@ void snos_tick(void) {
 snOSError snos_enable_system_timer(void) {
 	if (__timer_init) {
 		__timer_enabled = 1;
+
+		__SNOS_ENABLE_INTERRUPTS();
 		return snOS_SUCCESS;
 	} else {
 		return snOS_ERROR;
@@ -63,19 +75,18 @@ snOSError snos_enable_system_timer(void) {
 snOSError snos_disable_system_timer(void) {
 	if (__timer_init) {
 		__timer_enabled = 0;
+		__SNOS_DISABLE_INTERRUPTS();
 		return snOS_SUCCESS;
 	} else {
 		return snOS_ERROR;
 	}
 }
 
-snOSTimer *snos_create_timer(snOSError (*timer_callback)(void), snOSTimeVector duration_ms) {
+snOSTimer *snos_create_timer(void (*timer_callback)(void), snOSTimeVector duration_ms) {
 	snOSTimer *new_timer = NULL;
 
 	if (!__timer_init) {
-		if (_initialize_timers() != snOS_SUCCESS) {
-			return NULL;
-		}
+		return NULL;
 	}
 
 	new_timer = snos_alloc(sizeof(snOSTimer));
@@ -96,26 +107,26 @@ snOSError snos_disable_timer(snOSTimer *timer) {
 		timer->enabled = 0;
 		return snOS_SUCCESS;
 	} else {
-		snOS_ERROR;
+		return snOS_ERROR;
 	}
 }
 
 snOSError snos_start_timer(snOSTimer *timer) {
 	if (timer && __timer_init) {
 		timer->enabled = 1;
-		timer->elapsed_time = 0;
+		timer->elapsed_ms = 0;
 		return snOS_SUCCESS;
 	} else {
-		snOS_ERROR;
+		return snOS_ERROR;
 	}
 }
 
 snOSError snos_set_duration(snOSTimer *timer, snOSTimeVector duration_ms) {
 	if (timer && __timer_init) {
-		timer->duration_ms = 0;
+		timer->duration_ms = duration_ms;
 		return snOS_SUCCESS;
 	} else {
-		snOS_ERROR;
+		return snOS_ERROR;
 	}
 }
 
@@ -138,15 +149,15 @@ snOSError snos_remove_timer(snOSTimer *timer) {
 
 		return snOS_SUCCESS;
 	} else {
-		snOS_ERROR;
+		return snOS_ERROR;
 	}
 }
 
-snOSError snos_change_callback(snOSTimer *timer, snOSError (*new_timer_callback)(void)) {
+snOSError snos_change_callback(snOSTimer *timer, void (*new_timer_callback)(void)) {
 	if (timer && __timer_init) {
 		timer->timer_callback = new_timer_callback;
 		return snOS_SUCCESS;
 	} else {
-		snOS_ERROR;
+		return snOS_ERROR;
 	}
 }

@@ -7,7 +7,7 @@ CC_AVR					= atmega328p
 F_CPU					= 16000000UL
 BURNER_AVR				= ATMEGA328P
 BURNER_PROGRAMMER		= Arduino
-COMPILER_PATH			= /dev/tty.usbmodem*
+COMPILER_PATH			= /dev/tty.usbmodem1411
 OBJECT_COPY				= avr-objcopy
 BAUDRATE				= 115200
 ###########################################
@@ -23,6 +23,7 @@ PLATFORM_CSOURCES	= platform/avr/avr_pub_sub_main.c
 PLATFORM_INCLUDES	+= -I platform/avr/drivers/uart_driver
 PLATFORM_INCLUDES	+= -I platform/avr/protocols/leds
 PLATFORM_INCLUDES	+= -I platform/avr/protocols/button
+PLATFORM_INCLUDES	+= -I platform/avr/protocols/interrupts
 
 # UART PROTOCOL PLATFORM
 PLATFORM_INCLUDES += -I platform/avr/protocols/uart
@@ -32,7 +33,7 @@ PLATFORM_INCLUDES += -I platform/avr/protocols/uart
 PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/uart_driver.c
 PLATFORM_CSOURCES	+= platform/avr/protocols/leds/led.c
 PLATFORM_CSOURCES	+= platform/avr/protocols/button/button.c
-
+PLATFORM_CSOURCES	+= platform/avr/protocols/interrupts/interrupts.c
 # BUFFER #
 PLATFORM_CSOURCES	+= platform/avr/drivers/uart_driver/buffer.c
 # snOS PLATFORM #
@@ -72,6 +73,9 @@ CC_LN_OPTIONS				+= -o${EXECUTABLE}.elf
 CC_LN_OPTIONS				+= ${OBJECTS}
 
 SNOS_INCLUDE_PATH	+= -I .
+
+SNOS_INCLUDE_PATH	+= -I platform/
+
 SNOS_INCLUDE_PATH 	+= -I system/
 SNOS_INCLUDE_PATH	+= -I system/snos_error_codes/
 SNOS_INCLUDE_PATH	+= -I system/snos_alloc/
@@ -85,6 +89,9 @@ SNOS_INCLUDE_PATH	+= -I structures/snos_tasks/
 SNOS_INCLUDE_PATH	+= -I connect/
 
 SNOS_CSOURCES	+= snos.c
+
+SNOS_CSOURCES	+= platform/ports/snos_port.c
+
 SNOS_CSOURCES	+= connect/snos_connect.c
 SNOS_CSOURCES	+= connect/snos_pub_sub.c
 

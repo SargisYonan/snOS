@@ -1,9 +1,27 @@
 #include "snos.h"
 
 snOSError snos_initialize(void) {
-	snOSError ret;
+	snOSError ret = snOS_SUCCESS;
 
 	ret = initialize_snos_system_queue();
+	if (ret != snOS_SUCCESS) {
+		return ret;
+	}
+
+	#ifdef SNOS_THREADING
+
+		ret = initialize_snos_port();
+		if (ret != snOS_SUCCESS) {
+			return ret;
+		}
+
+		ret = initialize_snos_timers();
+		if (ret != snOS_SUCCESS) {
+			return ret;
+		}
+		snos_enable_system_timer();
+
+	#endif
 
 	return ret;
 }
